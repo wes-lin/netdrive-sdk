@@ -1,11 +1,6 @@
 import got, { Got } from 'got'
 import crypto from 'crypto'
-import {
-  computedMD5,
-  delay,
-  encrypt2Hex,
-  formatBytes,
-} from '@netdrive-sdk/utils'
+import { computedMD5, delay, encrypt2Hex, formatBytes } from '@netdrive-sdk/utils'
 import {
   LanZouYClientOptions,
   FileInfo,
@@ -14,7 +9,8 @@ import {
   QiniupFileInfo,
   ShareUrlResponse,
   QiniupUpTokenRequest,
-  LanZouYClientConfig
+  LanZouYClientConfig,
+  FileListParam
 } from './types'
 import { MemoryTokenStore } from './store'
 import { createReadStream } from 'fs'
@@ -109,17 +105,20 @@ abstract class ALanZouYClient {
     return res.appToken
   }
 
-  getFileList = (folderId = 0, offset = 1, limit = 60): Promise<FileInfo> =>
-    this.client
+  getFileList = (param?: FileListParam): Promise<FileInfo> => {
+    const mergedParams = {
+      folderId: 0,
+      type: 0,
+      offset: 1,
+      limit: 60,
+      ...param
+    }
+    return this.client
       .get(`${this.config.protectURL}/record/file/list`, {
-        searchParams: {
-          folderId,
-          type: 0,
-          offset,
-          limit
-        }
+        searchParams: mergedParams
       })
       .json()
+  }
 
   createFolder = (
     parentFolderId: string | number,
@@ -239,10 +238,11 @@ abstract class ALanZouYClient {
       })
 
       try {
+        console.log('准备上传文件', fileName)
         const resp = await formUploader.putStream(res.upToken, fileName, file, putExtra)
         if (resp.ok()) {
           const token = resp.data.token
-          const maxRetry = 60
+          const maxRetry = 120
           for (let index = 0; index < maxRetry; index++) {
             try {
               const result = await this.getQiniupResults(token)
@@ -250,7 +250,7 @@ abstract class ALanZouYClient {
                 continue
               }
               if (result.list[0].status === 1) {
-                console.log('文件处理成功')
+                console.log('文件上传成功', fileName)
                 return result.list[0].fileId
               }
               delay(1000)
@@ -299,6 +299,53 @@ abstract class ALanZouYClient {
       followRedirect: false
     })
     return downloadUrl.headers.location
+  }
+
+  async ensureFolderPath(folderPath: string, parentFolderId: number = 0): Promise<number> {
+    // 分割路径为各个部分
+    const pathParts = folderPath.split('/').filter((part) => part.trim() !== '')
+
+    let currentFolderId = parentFolderId
+
+    for (const folderName of pathParts) {
+      // 检查当前文件夹下是否存在目标文件夹
+      const fileList = await this.getFileList({
+        folderId: currentFolderId,
+        type: 2,
+        limit: 1000 // 假设一个文件夹下不会超过1000个文件/文件夹
+      })
+
+      // 查找匹配的文件夹
+      const existingFolder = fileList.list?.find((item) => item.folderName === folderName)
+
+      if (existingFolder) {
+        // 文件夹已存在，使用现有ID
+        currentFolderId = existingFolder.folderId
+      } else {
+        // 文件夹不存在，创建新文件夹
+        const pathList = await this.getPathList(currentFolderId)
+        const response = await this.createFolder(currentFolderId, folderName, undefined, pathList)
+
+        if (response && response.list?.length) {
+          currentFolderId = response.list[0].id
+        } else {
+          throw new Error(`Failed to create folder: ${folderName}`)
+        }
+      }
+    }
+
+    return currentFolderId
+  }
+
+  // 辅助方法：获取当前文件夹的路径列表
+  async getPathList(folderId: number): Promise<string[]> {
+    try {
+      const pathResponse = await this.searchPath(folderId.toString())
+      return pathResponse.list?.map((item) => item.name) || []
+    } catch (error) {
+      console.error('Error getting path list:', error)
+      return []
+    }
   }
 }
 

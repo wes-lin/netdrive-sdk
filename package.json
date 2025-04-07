@@ -1,13 +1,13 @@
 {
-  "name": "netdrive-sdk",
+  "name": "netdrive-sdk-monorepo",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "pnpm -r build"
   },
   "author": "",
-  "license": "ISC",
+  "license": "AGPL-3.0 license",
   "devDependencies": {
     "@types/node": "^22.9.0",
     "@typescript-eslint/parser": "^6.17.0",

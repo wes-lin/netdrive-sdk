@@ -7,6 +7,13 @@ export interface ApiResponse<T = any> extends Response {
   list?: T[]
 }
 
+export interface FileListParam {
+  folderId?: number
+  offset?: number
+  type?: number
+  limit?: number
+}
+
 export interface FileInfo
   extends ApiResponse<{
     addTime: string
