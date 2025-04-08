@@ -2,7 +2,9 @@
   "name": "@netdrive-sdk/ilanzou",
   "version": "1.0.0",
   "description": "",
+  "source": "src/index.ts",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "test": "ts-node -r dotenv/config ./test/index.test.ts"
@@ -12,6 +14,7 @@
   "dependencies": {
     "@netdrive-sdk/types": "workspace:*",
     "@netdrive-sdk/utils": "workspace:*",
+    "@netdrive-sdk/log": "workspace:*",
     "got": "11.8.2",
     "qiniu": "^7.14.0"
   },

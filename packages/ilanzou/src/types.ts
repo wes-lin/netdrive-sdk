@@ -1,3 +1,5 @@
+import { LoggerOptions } from '@netdrive-sdk/log'
+
 interface Response {
   code: number
   msg: string
@@ -48,6 +50,7 @@ export interface LanZouYClientOptions {
   username: string
   password: string
   tokenStore?: TokenStore
+  logConfig?: LoggerOptions
 }
 
 export interface LanZouYClientConfig {

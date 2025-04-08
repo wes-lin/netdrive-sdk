@@ -16,6 +16,10 @@ import { MemoryTokenStore } from './store'
 import { createReadStream } from 'fs'
 import { form_up } from 'qiniu'
 import path from 'path'
+import { Logger } from '@netdrive-sdk/log'
+
+let log = Logger.fromConfig({})
+
 abstract class ALanZouYClient {
   readonly username
   readonly password
@@ -27,6 +31,9 @@ abstract class ALanZouYClient {
     this.username = options.username
     this.password = options.password
     this.tokenStore = options.tokenStore || new MemoryTokenStore()
+    if (options.logConfig) {
+      log = Logger.fromConfig(options.logConfig)
+    }
     this.config = {
       devModel: 'chrome',
       devVersion: '131',
@@ -44,9 +51,11 @@ abstract class ALanZouYClient {
         Origin: this.config.webUrl as string,
         Referer: `${this.config.webUrl}/`
       },
+      retry: 2,
       hooks: {
         beforeRequest: [
           async (options) => {
+            log.debug(`beforeRequest url: ${options.url}`)
             const nowTs = new Date().getTime().toString()
             const tsEncode = encrypt2Hex(nowTs, this.config.secret)
             const searchParams = options.url.searchParams
@@ -65,16 +74,25 @@ abstract class ALanZouYClient {
           }
         ],
         afterResponse: [
-          (response, retryWithMergedOptions) => {
+          async (response, retryWithMergedOptions) => {
             try {
+              log.debug(`afterResponse url: ${response.requestUrl}, response: ${response.body})}`)
               if (response.body) {
                 const res = JSON.parse(response.body.toString())
-                if ('code' in res && res.code === -2) {
+                if (res.code === -2) {
                   this.tokenStore.set('')
-                  retryWithMergedOptions({})
+                  return retryWithMergedOptions({})
+                } else if (res.code === -1) {
+                  await delay(1000)
+                  return retryWithMergedOptions({}).then((res) => {
+                    log.debug(`Retry url: ${response.requestUrl} , response: ${res.body})}`)
+                    return res
+                  })
                 }
               }
-            } catch (e) {}
+            } catch (e) {
+              log.error(`${e}`)
+            }
 
             return response
           }
@@ -212,12 +230,16 @@ abstract class ALanZouYClient {
   uploadFile = async (filePath: string, folderId = 0) => {
     const fileName = path.basename(filePath)
     const fileInfo = await computedMD5(filePath)
+    const fileSize = fileInfo.size > 1024 ? fileInfo.size / 1024 : 1
     const res = await this.getQiniupUpToken({
       fileName,
-      fileSize: fileInfo.size,
+      fileSize,
       folderId,
       md5: fileInfo.md5
     })
+    if (!res.upToken) {
+      throw new Error(`cannot get upToken! ${JSON.stringify(res)}`)
+    }
     if (res.upToken === '-1') {
       return res.map.fileId
     } else {
@@ -302,12 +324,17 @@ abstract class ALanZouYClient {
   }
 
   async ensureFolderPath(folderPath: string, parentFolderId: number = 0): Promise<number> {
+    if (!folderPath) {
+      return 0
+    }
     // 分割路径为各个部分
     const pathParts = folderPath.split('/').filter((part) => part.trim() !== '')
 
     let currentFolderId = parentFolderId
 
-    for (const folderName of pathParts) {
+    for (let i = 0; i < pathParts.length; i++) {
+      const folderName = pathParts[i]
+
       // 检查当前文件夹下是否存在目标文件夹
       const fileList = await this.getFileList({
         folderId: currentFolderId,
@@ -317,17 +344,20 @@ abstract class ALanZouYClient {
 
       // 查找匹配的文件夹
       const existingFolder = fileList.list?.find((item) => item.folderName === folderName)
-
       if (existingFolder) {
         // 文件夹已存在，使用现有ID
         currentFolderId = existingFolder.folderId
       } else {
+        log.debug(folderPath)
         // 文件夹不存在，创建新文件夹
-        const pathList = await this.getPathList(currentFolderId)
-        const response = await this.createFolder(currentFolderId, folderName, undefined, pathList)
+        // 获取剩余路径部分作为pathList
+        const pathList = pathParts.slice(i).join('/')
+        const response = await this.createFolder(currentFolderId, undefined, undefined, [pathList])
 
         if (response && response.list?.length) {
           currentFolderId = response.list[0].id
+          // 剩余路径已经通过pathList处理，可以跳出循环
+          break
         } else {
           throw new Error(`Failed to create folder: ${folderName}`)
         }

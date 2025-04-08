@@ -32,6 +32,9 @@ importers:
 
   packages/ilanzou:
     dependencies:
+      '@netdrive-sdk/log':
+        specifier: workspace:*
+        version: link:../log
       '@netdrive-sdk/types':
         specifier: workspace:*
         version: link:../types
@@ -44,6 +47,8 @@ importers:
       qiniu:
         specifier: ^7.14.0
         version: 7.14.0
+
+  packages/log: {}
 
   packages/types: {}
 
