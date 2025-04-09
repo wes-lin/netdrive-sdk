@@ -20,6 +20,8 @@ import { Logger } from '@netdrive-sdk/log'
 
 let log = Logger.fromConfig({})
 
+process.env.TZ = 'Asia/Hong_Kong'
+
 abstract class ALanZouYClient {
   readonly username
   readonly password
