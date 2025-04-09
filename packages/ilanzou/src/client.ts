@@ -204,7 +204,7 @@ abstract class ALanZouYClient {
       .get(`${this.config.publicURL}/7n/results`, {
         searchParams: {
           tokenList,
-          tokenTime: new Date().toString().replace('(Hong Kong Standard Time)', '(香港标准时间)')
+          tokenTime: new Date().toString()
         }
       })
       .json()
