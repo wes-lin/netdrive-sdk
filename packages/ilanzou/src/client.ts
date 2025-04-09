@@ -260,7 +260,7 @@ abstract class ALanZouYClient {
       })
 
       try {
-        log.info('准备上传文件', fileName)
+        log.info(`准备上传文件: ${fileName}`)
         const resp = await formUploader.putStream(res.upToken, fileName, file, putExtra)
         if (resp.ok()) {
           const token = resp.data.token
@@ -272,12 +272,14 @@ abstract class ALanZouYClient {
                 continue
               }
               if (result.list[0].status === 1) {
-                log.info('文件上传成功', fileName)
+                log.info(`文件上传成功: ${fileName}`)
                 return result.list[0].fileId
               }
-              delay(1000)
+              await delay(1000)
             } catch {}
           }
+        } else {
+          log.error(JSON.stringify(resp.resp))
         }
       } catch (e) {
         console.error(e)
@@ -366,7 +368,6 @@ abstract class ALanZouYClient {
 
     return currentFolderId
   }
-
 }
 
 export class LanZouYClient extends ALanZouYClient {
