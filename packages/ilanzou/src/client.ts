@@ -254,17 +254,17 @@ abstract class ALanZouYClient {
         const elapsedTime = (Date.now() - startTime) / 1000 // 秒
         const uploadSpeed = (uploadedBytes / (1024 * 1024) / elapsedTime).toFixed(2) // MB/s
 
-        console.log(
+        log.info(
           `上传进度: ${progress}% | 已上传: ${formatBytes(uploadedBytes)} / ${formatBytes(fileInfo.size)} | 速度: ${uploadSpeed} MB/s`
         )
       })
 
       try {
-        console.log('准备上传文件', fileName)
+        log.info('准备上传文件', fileName)
         const resp = await formUploader.putStream(res.upToken, fileName, file, putExtra)
         if (resp.ok()) {
           const token = resp.data.token
-          const maxRetry = 120
+          const maxRetry = 60 * 10
           for (let index = 0; index < maxRetry; index++) {
             try {
               const result = await this.getQiniupResults(token)
@@ -272,7 +272,7 @@ abstract class ALanZouYClient {
                 continue
               }
               if (result.list[0].status === 1) {
-                console.log('文件上传成功', fileName)
+                log.info('文件上传成功', fileName)
                 return result.list[0].fileId
               }
               delay(1000)
@@ -367,16 +367,6 @@ abstract class ALanZouYClient {
     return currentFolderId
   }
 
-  // 辅助方法：获取当前文件夹的路径列表
-  async getPathList(folderId: number): Promise<string[]> {
-    try {
-      const pathResponse = await this.searchPath(folderId.toString())
-      return pathResponse.list?.map((item) => item.name) || []
-    } catch (error) {
-      console.error('Error getting path list:', error)
-      return []
-    }
-  }
 }
 
 export class LanZouYClient extends ALanZouYClient {
