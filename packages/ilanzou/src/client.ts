@@ -1,6 +1,6 @@
 import got, { Got } from 'got'
 import crypto from 'crypto'
-import { computedMD5, delay, encrypt2Hex, formatBytes } from '@netdrive-sdk/utils'
+import { computedMD5, delay, encrypt2Hex } from '@netdrive-sdk/utils'
 import {
   LanZouYClientOptions,
   FileInfo,
@@ -13,7 +13,6 @@ import {
   FileListParam
 } from './types'
 import { MemoryTokenStore } from './store'
-import { createReadStream } from 'fs'
 import { form_up } from 'qiniu'
 import path from 'path'
 import { Logger } from '@netdrive-sdk/log'
@@ -247,23 +246,16 @@ abstract class ALanZouYClient {
     } else {
       const formUploader = new form_up.FormUploader()
       const putExtra = new form_up.PutExtra()
-      // let uploadedBytes = 0
-      // const startTime = Date.now()
-      // const file = createReadStream(filePath)
-      // file.on('data', (chunk) => {
-      //   uploadedBytes += chunk.length
-      //   const progress = ((uploadedBytes / fileInfo.size) * 100).toFixed(2)
-      //   const elapsedTime = (Date.now() - startTime) / 1000 // 秒
-      //   const uploadSpeed = (uploadedBytes / (1024 * 1024) / elapsedTime).toFixed(2) // MB/s
-
-      //   log.info(
-      //     `上传进度: ${progress}% | 已上传: ${formatBytes(uploadedBytes)} / ${formatBytes(fileInfo.size)} | 速度: ${uploadSpeed} MB/s`
-      //   )
-      // })
 
       try {
         log.info(`准备上传文件: ${fileName}`)
-        const resp = await formUploader.putFile(res.upToken, fileName, filePath, putExtra)
+        const timestamp = Math.floor(Date.now() / 1000)
+        const resp = await formUploader.putFile(
+          res.upToken,
+          `${timestamp}_${fileName}`,
+          filePath,
+          putExtra
+        )
         if (resp.ok()) {
           const token = resp.data.token
           const maxRetry = 60 * 10

@@ -1,6 +1,5 @@
 import * as crypto from 'crypto'
-import { createReadStream, promises } from 'node:fs'
-import path from 'path'
+import { createReadStream } from 'node:fs'
 
 const decryptByBase64 = (word: string, key: string, iv?: Buffer) => {
   const keyBuffer = Buffer.from(key, 'utf8')
@@ -48,26 +47,6 @@ const computedMD5 = (
   })
 }
 
-async function listAllSubdirectoriesWithoutCurrent(dirPath: string): Promise<string[]> {
-  try {
-    const items = await promises.readdir(dirPath, { withFileTypes: true })
-    let directories: string[] = []
-
-    for (const item of items) {
-      const fullPath = path.join(dirPath, item.name)
-      if (item.isDirectory()) {
-        const subDirs = await listAllSubdirectoriesWithoutCurrent(fullPath)
-        directories = directories.concat(subDirs)
-      }
-    }
-
-    return directories
-  } catch (err) {
-    console.error('Error reading directory:', err)
-    return []
-  }
-}
-
 function formatBytes(bytes: number) {
   if (bytes === 0) return '0 Bytes'
   const k = 1024
@@ -78,11 +57,4 @@ function formatBytes(bytes: number) {
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export {
-  decryptByBase64,
-  encrypt2Hex,
-  computedMD5,
-  listAllSubdirectoriesWithoutCurrent,
-  delay,
-  formatBytes
-}
+export { decryptByBase64, encrypt2Hex, computedMD5, delay, formatBytes }
