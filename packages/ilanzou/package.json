@@ -1,7 +1,7 @@
 {
   "name": "@netdrive-sdk/ilanzou",
   "version": "1.0.0-alpha.1",
-  "description": "",
+  "description": "蓝奏云优享/小飞机网盘SDK",
   "source": "src/index.ts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,7 +20,7 @@
     "url": "git+https://github.com/wes-lin/netdrive-sdk.git",
     "directory": "packages/ilanzou"
   },
-  "license": "AGPL-3.0 license",
+  "license": "AGPL-3.0",
   "dependencies": {
     "@netdrive-sdk/utils": "^1.0.0-alpha.1",
     "@netdrive-sdk/log": "^1.0.0-alpha.1",

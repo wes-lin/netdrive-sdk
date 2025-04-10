@@ -20,7 +20,7 @@
     "url": "git+https://github.com/wes-lin/netdrive-sdk.git",
     "directory": "packages/utils"
   },
-  "license": "AGPL-3.0 license",
+  "license": "AGPL-3.0",
   "dependencies": {},
   "devDependencies": {}
 }
