@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: 18.x
           cache: pnpm
-          registry-url: "https://registry.npmjs.org"
+          registry-url: 'https://registry.npmjs.org'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
@@ -52,4 +52,4 @@ jobs:
 
       - name: publish
         working-directory: packages/${{ github.event.inputs.package }}
-        run: npm publish
+        run: npm publish --access=public
