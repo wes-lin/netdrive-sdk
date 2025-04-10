@@ -1,20 +1,29 @@
 {
   "name": "@netdrive-sdk/ilanzou",
-  "version": "1.0.0",
+  "version": "1.0.0-alpha.1",
   "description": "",
   "source": "src/index.ts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!__tests__"
+  ],
   "scripts": {
     "build": "tsc",
-    "test": "ts-node -r dotenv/config ./test/index.test.ts"
+    "test": "ts-node -r dotenv/config ./__tests__/index.test.ts"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "wes lin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wes-lin/netdrive-sdk.git",
+    "directory": "packages/ilanzou"
+  },
+  "license": "AGPL-3.0 license",
   "dependencies": {
-    "@netdrive-sdk/types": "workspace:*",
-    "@netdrive-sdk/utils": "workspace:*",
-    "@netdrive-sdk/log": "workspace:*",
+    "@netdrive-sdk/utils": "^1.0.0-alpha.1",
+    "@netdrive-sdk/log": "^1.0.0-alpha.1",
     "got": "11.8.2",
     "qiniu": "^7.14.0"
   },

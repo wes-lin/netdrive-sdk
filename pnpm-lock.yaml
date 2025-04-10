@@ -33,13 +33,10 @@ importers:
   packages/ilanzou:
     dependencies:
       '@netdrive-sdk/log':
-        specifier: workspace:*
+        specifier: ^1.0.0-alpha.1
         version: link:../log
-      '@netdrive-sdk/types':
-        specifier: workspace:*
-        version: link:../types
       '@netdrive-sdk/utils':
-        specifier: workspace:*
+        specifier: ^1.0.0-alpha.1
         version: link:../utils
       got:
         specifier: 11.8.2
@@ -49,8 +46,6 @@ importers:
         version: 7.14.0
 
   packages/log: {}
-
-  packages/types: {}
 
   packages/utils: {}
 
