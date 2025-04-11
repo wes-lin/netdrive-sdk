@@ -256,6 +256,7 @@ abstract class ALanZouYClient {
           filePath,
           putExtra
         )
+        log.debug(`获取上传结果:${JSON.stringify(resp.resp)}`)
         if (resp.ok()) {
           const token = resp.data.token
           const maxRetry = 60 * 10
@@ -272,8 +273,6 @@ abstract class ALanZouYClient {
               await delay(1000)
             } catch {}
           }
-        } else {
-          log.error(JSON.stringify(resp.resp))
         }
       } catch (e) {
         console.error(e)
@@ -344,7 +343,6 @@ abstract class ALanZouYClient {
         // 文件夹已存在，使用现有ID
         currentFolderId = existingFolder.folderId
       } else {
-        log.debug(folderPath)
         // 文件夹不存在，创建新文件夹
         // 获取剩余路径部分作为pathList
         const pathList = pathParts.slice(i).join('/')
