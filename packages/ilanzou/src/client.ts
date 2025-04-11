@@ -259,6 +259,9 @@ abstract class ALanZouYClient {
         log.debug(`获取上传结果:${JSON.stringify(resp.resp)}`)
         if (resp.ok()) {
           const token = resp.data.token
+          if(!token) {
+            throw new Error(`cannot get token! ${JSON.stringify(resp.data)}`)
+          }
           const maxRetry = 60 * 10
           for (let index = 0; index < maxRetry; index++) {
             try {
