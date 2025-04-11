@@ -7,7 +7,7 @@
     "build": "pnpm -r build"
   },
   "author": "",
-  "license": "AGPL-3.0 license",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "@types/node": "^22.9.0",
     "@typescript-eslint/parser": "^6.17.0",
