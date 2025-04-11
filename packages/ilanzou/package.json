@@ -1,6 +1,6 @@
 {
   "name": "@netdrive-sdk/ilanzou",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.3",
   "description": "蓝奏云优享/小飞机网盘SDK",
   "source": "src/index.ts",
   "main": "dist/index.js",
