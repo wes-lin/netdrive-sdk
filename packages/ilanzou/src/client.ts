@@ -16,6 +16,7 @@ import { MemoryTokenStore } from './store'
 import { form_up } from 'qiniu'
 import path from 'path'
 import { Logger } from '@netdrive-sdk/log'
+import { uploadToQiniu } from './qiniuUploader'
 
 let log = Logger.fromConfig({})
 
@@ -250,32 +251,39 @@ abstract class ALanZouYClient {
       try {
         log.info(`准备上传文件: ${fileName}`)
         const timestamp = Math.floor(Date.now() / 1000)
-        const resp = await formUploader.putFile(
+
+        function generateKey(account: string) {
+          const now = new Date()
+          return `disk/${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}/${account}/${now.getTime().toString().padStart(16, '0')}`
+        }
+        const result = await uploadToQiniu(
+          'wpanstore',
           res.upToken,
-          `${timestamp}_${fileName}`,
           filePath,
-          putExtra
+          generateKey(this.username),
+          (progress) => {
+            console.log(`上传进度:  ⬆️  transferred ${progress.loaded}/ ${progress.total}`)
+          }
         )
-        log.debug(`获取上传结果:${JSON.stringify(resp.resp)}`)
-        if (resp.ok()) {
-          const token = resp.data.token
-          if(!token) {
-            throw new Error(`cannot get token! ${JSON.stringify(resp.data)}`)
-          }
-          const maxRetry = 60 * 10
-          for (let index = 0; index < maxRetry; index++) {
-            try {
-              const result = await this.getQiniupResults(token)
-              if (!result.list) {
-                continue
-              }
-              if (result.list[0].status === 1) {
-                log.info(`文件上传成功: ${fileName}`)
-                return result.list[0].fileId
-              }
-              await delay(1000)
-            } catch {}
-          }
+
+        log.debug(`获取上传结果:${JSON.stringify(result)}`)
+        const token = result.token
+        if (!token) {
+          throw new Error(`cannot get token! ${JSON.stringify(result)}`)
+        }
+        const maxRetry = 60 * 10
+        for (let index = 0; index < maxRetry; index++) {
+          try {
+            const result = await this.getQiniupResults(token)
+            if (!result.list) {
+              continue
+            }
+            if (result.list[0].status === 1) {
+              log.info(`文件上传成功: ${fileName}`)
+              return result.list[0].fileId
+            }
+            await delay(1000)
+          } catch {}
         }
       } catch (e) {
         console.error(e)
