@@ -4,7 +4,7 @@ import * as crypto from 'crypto'
 import path from 'node:path'
 
 const generateRandomFile = () => {
-  const size = 3 * 1024 * 1024 // 1MB
+  const size = 50 * 1024 * 1024 // 1MB
   const randomData = crypto.randomBytes(size) // 生成随机数据
   const filePath = `.cache/${crypto.randomUUID()}.bin`
   const dirPath = path.dirname(filePath)
@@ -12,10 +12,8 @@ const generateRandomFile = () => {
     fs.mkdirSync(dirPath, { recursive: true })
   }
   // 将随机数据写入文件
-  const stream = fs.createWriteStream(filePath);
-  stream.write(randomData);
-  stream.end();
-  return filePath;
+  fs.writeFileSync(filePath, randomData)
+  return filePath
 }
 
 ;(async () => {
@@ -28,10 +26,11 @@ const generateRandomFile = () => {
       isDebugEnabled: true
     }
   }
-  const client =
-    process.env.TYPE === 'feijipan' ? new FeiJiPanClient(options) : new LanZouYClient(options)
 
   const fileName = generateRandomFile()
+
+  const client =
+    process.env.TYPE === 'feijipan' ? new FeiJiPanClient(options) : new LanZouYClient(options)
 
   const res = await client.uploadFile(fileName, 0)
   console.log(res)

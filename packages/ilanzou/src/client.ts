@@ -13,7 +13,6 @@ import {
   FileListParam
 } from './types'
 import { MemoryTokenStore } from './store'
-import { form_up } from 'qiniu'
 import path from 'path'
 import { Logger } from '@netdrive-sdk/log'
 import { uploadToQiniu } from './qiniuUploader'
@@ -245,26 +244,16 @@ abstract class ALanZouYClient {
     if (res.upToken === '-1') {
       return res.map.fileId
     } else {
-      const formUploader = new form_up.FormUploader()
-      const putExtra = new form_up.PutExtra()
-
       try {
         log.info(`准备上传文件: ${fileName}`)
-        const timestamp = Math.floor(Date.now() / 1000)
 
+        const { map } = await this.userInfo()
+        const key = generateKey(map.account)
         function generateKey(account: string) {
           const now = new Date()
-          return `disk/${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}/${account}/${now.getTime().toString().padStart(16, '0')}`
+          return `storage/files/${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}/${account}/${now.getTime()}.gz`
         }
-        const result = await uploadToQiniu(
-          this.config.bucket,
-          res.upToken,
-          filePath,
-          generateKey(this.username),
-          (progress) => {
-            console.log(`上传进度:  ⬆️  transferred ${progress.loaded}/ ${progress.total}`)
-          }
-        )
+        const result = await uploadToQiniu(this.config.bucket, res.upToken, filePath, key)
 
         log.debug(`获取上传结果:${JSON.stringify(result)}`)
         const token = result.token
@@ -293,20 +282,19 @@ abstract class ALanZouYClient {
   }
 
   userInfo(): Promise<{
-    accountMap: {
+    map: {
       userId: number
-      totalSize: number
-      usedSize: number
+      account: string
     }
   }> {
-    return this.client.get(`${this.config.protectURL}/user/info/map`).json()
+    return this.client.get(`${this.config.protectURL}/user/account/map`).json()
   }
 
   async downloadFile(fileId: string) {
-    const { accountMap } = await this.userInfo()
+    const { map } = await this.userInfo()
     const nowTs = new Date().getTime().toString()
     const tsEncode = encrypt2Hex(nowTs, this.config.secret)
-    const fidEncode = encrypt2Hex(`${fileId}|${accountMap.userId}`, this.config.secret)
+    const fidEncode = encrypt2Hex(`${fileId}|${map.userId}`, this.config.secret)
     const auth = encrypt2Hex(`${fileId}|${nowTs}`, this.config.secret)
     const token = await this.getAppToken()
     const urlObject = new URLSearchParams({

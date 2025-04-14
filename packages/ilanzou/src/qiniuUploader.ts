@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import crypto from 'crypto'
-import got, { Progress } from 'got'
+import got from 'got'
 import FormData from 'form-data'
 
 // 类型定义
@@ -59,13 +59,18 @@ export async function simpleUpload(
 
   const fileData = await fs.promises.readFile(filePath)
   const form = new FormData()
+  const fileName = path.basename(filePath)
   form.append('token', uptoken)
   form.append('file', fileData)
   form.append('key', key)
+  form.append('fname', fileName)
   return await got
     .post(url, {
       body: form,
       headers: form.getHeaders()
+    })
+    .on('uploadProgress', (progress) => {
+      console.log(`${fileName}:⬆️  transferred ${progress.transferred}/${progress.total}`)
     })
     .json()
 }
@@ -99,7 +104,8 @@ async function uploadPart(
   uploadId: string,
   key: string,
   partNumber: number,
-  chunkData: Buffer
+  chunkData: Buffer,
+  fname: string
 ): Promise<{ etag: string }> {
   const url = `https://${QINIU_CONFIG.uploadDomain}/buckets/${bucket}/objects/${key}/uploads/${uploadId}/${partNumber}`
   const etag = crypto.createHash('md5').update(chunkData).digest('hex')
@@ -113,6 +119,11 @@ async function uploadPart(
       },
       body: chunkData
     })
+    .on('uploadProgress', (progress) => {
+      console.log(
+        `${fname}-part${partNumber}:⬆️  transferred ${progress.transferred}/${progress.total}`
+      )
+    })
     .json<{ etag: string }>()
 }
 
@@ -123,17 +134,16 @@ async function uploadPart(
  * @param key 文件key（可选）
  * @param parts 所有分块信息
  * @param fileEtag 整个文件的etag
- * @returns Promise<{hash: string, key: string}> 上传结果
+ * @returns Promise<{token: string}> 上传结果
  */
 async function completeMultipartUpload(
   bucket: string,
   uptoken: string,
   uploadId: string,
   key: string,
+  fname: string,
   parts: UploadPart[]
-): Promise<{
-  token: string
-}> {
+): Promise<UploadResult> {
   const url = `https://${QINIU_CONFIG.uploadDomain}/buckets/${bucket}/objects/${key}/uploads/${uploadId}`
 
   // 按照partNumber排序
@@ -146,7 +156,7 @@ async function completeMultipartUpload(
       },
       json: {
         parts: sortedParts,
-        fname: key ? path.basename(key) : undefined
+        fname
       }
     })
     .json()
@@ -159,12 +169,12 @@ export async function multipartUpload(
   bucket: string,
   uptoken: string,
   filePath: string,
-  key: string,
-  onProgress?: ProgressCallback
+  key: string
 ): Promise<{
   token: string
 }> {
   const fileStats = await fs.promises.stat(filePath)
+  const fileName = path.basename(filePath)
   const keyBase64 = encodeKey(key)
 
   // 1. 初始化分块上传
@@ -178,7 +188,9 @@ export async function multipartUpload(
 
   const parts: UploadPart[] = []
   const fd = await fs.promises.open(filePath, 'r')
-
+  // 创建并发控制池
+  const MAX_CONCURRENT = 5
+  const pendingTasks: Promise<{ etag: string; partNumber: number }>[] = []
   // 上传所有分块
   for (let i = 0; i < chunkCount; i++) {
     const partNumber = i + 1
@@ -188,20 +200,46 @@ export async function multipartUpload(
 
     await fd.read(buffer, 0, length, position)
 
-    // 上传当前分块
-    console.log(`Uploading part ${partNumber}/${chunkCount}...`)
+    // 上传当前分块（控制并发数）
+    const taskWithCompletion = uploadPart(
+      bucket,
+      uptoken,
+      uploadId,
+      keyBase64,
+      partNumber,
+      buffer,
+      fileName
+    ).then(({ etag }) => ({ etag, partNumber }))
 
-    const { etag } = await uploadPart(bucket, uptoken, uploadId, keyBase64, partNumber, buffer)
-    parts.push({ partNumber, etag })
+    pendingTasks.push(taskWithCompletion)
 
-    console.log(`Part ${partNumber} uploaded, ETag: ${etag}`)
+    // 当并发数达到最大值时，等待其中一个任务完成
+    if (pendingTasks.length >= MAX_CONCURRENT) {
+      await Promise.race(pendingTasks)
+    }
   }
+
+  // 等待剩余所有任务完成
+  const remainingResults = await Promise.all(pendingTasks)
+  remainingResults.forEach(({ etag, partNumber }) => {
+    parts.push({
+      partNumber,
+      etag
+    })
+  })
 
   await fd.close()
 
   // 3. 完成分块上传
   console.log('Completing multipart upload...')
-  const result = await completeMultipartUpload(bucket, uptoken, uploadId, keyBase64, parts)
+  const result = await completeMultipartUpload(
+    bucket,
+    uptoken,
+    uploadId,
+    keyBase64,
+    fileName,
+    parts
+  )
   console.log('Upload completed:', result)
 
   return result
@@ -211,8 +249,7 @@ export async function uploadToQiniu(
   bucket: string,
   uptoken: string,
   filePath: string,
-  key: string,
-  onProgress?: ProgressCallback
+  key: string
 ): Promise<UploadResult> {
   const stats = await fs.promises.stat(filePath)
 
