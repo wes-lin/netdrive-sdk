@@ -59,6 +59,7 @@ export interface LanZouYClientConfig {
   apiUrl: string
   protectURL: string
   publicURL: string
+  bucket: string
   devModel?: string
   devVersion?: string
   devType?: string

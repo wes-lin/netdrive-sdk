@@ -257,7 +257,7 @@ abstract class ALanZouYClient {
           return `disk/${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}/${account}/${now.getTime().toString().padStart(16, '0')}`
         }
         const result = await uploadToQiniu(
-          'wpanstore',
+          this.config.bucket,
           res.upToken,
           filePath,
           generateKey(this.username),
@@ -381,7 +381,8 @@ export class LanZouYClient extends ALanZouYClient {
         webUrl: 'https://www.ilanzou.com',
         apiUrl: 'https://api.ilanzou.com',
         protectURL: 'proved',
-        publicURL: 'unproved'
+        publicURL: 'unproved',
+        bucket: 'wpanstore-lanzou'
       },
       options
     )
@@ -396,7 +397,8 @@ export class FeiJiPanClient extends ALanZouYClient {
         webUrl: 'https://www.feijipan.com',
         apiUrl: 'https://api.feijipan.com',
         protectURL: 'app',
-        publicURL: 'ws'
+        publicURL: 'ws',
+        bucket: 'wpanstore'
       },
       options
     )
