@@ -14,10 +14,8 @@ import {
 } from './types'
 import { MemoryTokenStore } from './store'
 import path from 'path'
-import { Logger } from '@netdrive-sdk/log'
+import { logger } from './log'
 import { uploadToQiniu } from './qiniuUploader'
-
-let log = Logger.fromConfig({})
 
 process.env.TZ = 'Asia/Hong_Kong'
 
@@ -32,9 +30,6 @@ abstract class ALanZouYClient {
     this.username = options.username
     this.password = options.password
     this.tokenStore = options.tokenStore || new MemoryTokenStore()
-    if (options.logConfig) {
-      log = Logger.fromConfig(options.logConfig)
-    }
     this.config = {
       devModel: 'chrome',
       devVersion: '131',
@@ -56,7 +51,7 @@ abstract class ALanZouYClient {
       hooks: {
         beforeRequest: [
           async (options) => {
-            log.debug(`beforeRequest url: ${options.url}`)
+            logger.debug(`beforeRequest url: ${options.url}`)
             const nowTs = new Date().getTime().toString()
             const tsEncode = encrypt2Hex(nowTs, this.config.secret)
             const searchParams = options.url.searchParams
@@ -77,7 +72,9 @@ abstract class ALanZouYClient {
         afterResponse: [
           async (response, retryWithMergedOptions) => {
             try {
-              log.debug(`afterResponse url: ${response.requestUrl}, response: ${response.body})}`)
+              logger.debug(
+                `afterResponse url: ${response.requestUrl}, response: ${response.body})}`
+              )
               if (response.body) {
                 const res = JSON.parse(response.body.toString())
                 if (res.code === -2) {
@@ -86,13 +83,13 @@ abstract class ALanZouYClient {
                 } else if (res.code === -1) {
                   await delay(1000)
                   return retryWithMergedOptions({}).then((res) => {
-                    log.debug(`Retry url: ${response.requestUrl} , response: ${res.body})}`)
+                    logger.debug(`Retry url: ${response.requestUrl} , response: ${res.body})}`)
                     return res
                   })
                 }
               }
             } catch (e) {
-              log.error(`${e}`)
+              logger.error(e)
             }
 
             return response
@@ -245,7 +242,7 @@ abstract class ALanZouYClient {
       return res.map.fileId
     } else {
       try {
-        log.info(`准备上传文件: ${fileName}`)
+        logger.info(`准备上传文件: ${fileName}`)
 
         const { map } = await this.userInfo()
         const key = generateKey(map.account)
@@ -255,7 +252,7 @@ abstract class ALanZouYClient {
         }
         const result = await uploadToQiniu(this.config.bucket, res.upToken, filePath, key)
 
-        log.debug(`获取上传结果:${JSON.stringify(result)}`)
+        logger.debug(`获取上传结果:${JSON.stringify(result)}`)
         const token = result.token
         if (!token) {
           throw new Error(`cannot get token! ${JSON.stringify(result)}`)
@@ -268,14 +265,14 @@ abstract class ALanZouYClient {
               continue
             }
             if (result.list[0].status === 1) {
-              log.info(`文件上传成功: ${fileName}`)
+              logger.info(`文件上传成功: ${fileName}`)
               return result.list[0].fileId
             }
             await delay(1000)
           } catch {}
         }
       } catch (e) {
-        console.error(e)
+        logger.error(e)
       }
       throw new Error('uploadFile faile!')
     }

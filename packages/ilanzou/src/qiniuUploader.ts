@@ -3,6 +3,7 @@ import path from 'path'
 import crypto from 'crypto'
 import got from 'got'
 import FormData from 'form-data'
+import { logger } from './log'
 
 // 类型定义
 interface QiniuConfig {
@@ -70,7 +71,7 @@ export async function simpleUpload(
       headers: form.getHeaders()
     })
     .on('uploadProgress', (progress) => {
-      console.log(`${fileName}:⬆️  transferred ${progress.transferred}/${progress.total}`)
+      logger.info(`${fileName}:⬆️  transferred ${progress.transferred}/${progress.total}`)
     })
     .json()
 }
@@ -120,7 +121,7 @@ async function uploadPart(
       body: chunkData
     })
     .on('uploadProgress', (progress) => {
-      console.log(
+      logger.info(
         `${fname}-part${partNumber}:⬆️  transferred ${progress.transferred}/${progress.total}`
       )
     })
@@ -179,7 +180,7 @@ export async function multipartUpload(
 
   // 1. 初始化分块上传
   const uploadId = await initMultipartUpload(bucket, uptoken, keyBase64)
-  console.log('Upload ID:', uploadId)
+  logger.info(`Upload ID: ${uploadId}`)
 
   // 2. 读取文件并分块上传
   const fileSize = fileStats.size
@@ -231,7 +232,7 @@ export async function multipartUpload(
   await fd.close()
 
   // 3. 完成分块上传
-  console.log('Completing multipart upload...')
+  logger.info('Completing multipart upload...')
   const result = await completeMultipartUpload(
     bucket,
     uptoken,
@@ -240,7 +241,7 @@ export async function multipartUpload(
     fileName,
     parts
   )
-  console.log('Upload completed:', result)
+  logger.info(`Upload completed: ${JSON.stringify(result)}`)
 
   return result
 }

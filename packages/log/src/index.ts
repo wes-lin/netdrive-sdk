@@ -3,8 +3,6 @@ import path from 'path'
 
 type WritableStream = NodeJS.WritableStream
 
-let printer: ((message: string) => void) | null = null
-
 export interface Fields {
   [index: string]: any
 }
@@ -30,17 +28,15 @@ export interface LoggerOptions {
 
 export class Logger {
   private fileStream: fs.WriteStream | null = null
+  private stream: WritableStream
   private currentFileSize = 0
-  private readonly options: Required<LoggerOptions>
-  private readonly logDirectory: string
-  private readonly baseLogPath: string
-  private readonly logFileExt: string
-  private readonly baseLogName: string
+  private options: Required<LoggerOptions>
+  private logDirectory: string
+  private baseLogPath: string
+  private logFileExt: string
+  private baseLogName: string
 
-  constructor(
-    protected readonly stream: WritableStream,
-    options: LoggerOptions = {}
-  ) {
+  constructor(options: LoggerOptions = {}, stream?: WritableStream) {
     this.options = {
       consoleOutput: true,
       fileOutput: false,
@@ -55,10 +51,34 @@ export class Logger {
     this.baseLogPath = this.options.filePath
     this.logFileExt = path.extname(this.baseLogPath)
     this.baseLogName = path.basename(this.baseLogPath, this.logFileExt)
+    this.stream = stream || process.stdout
 
     if (this.options.fileOutput) {
       this.ensureLogDirectory()
       this.createFileStream()
+    }
+  }
+
+  configure(newOptions: Partial<LoggerOptions>): void {
+    // Merge new options with existing ones
+    this.options = {
+      ...this.options,
+      ...newOptions
+    }
+
+    // Handle file output changes
+    if (newOptions.fileOutput !== undefined || newOptions.filePath !== undefined) {
+      this.close()
+
+      if (this.options.fileOutput) {
+        this.logDirectory = path.dirname(this.options.filePath)
+        this.baseLogPath = this.options.filePath
+        this.logFileExt = path.extname(this.baseLogPath)
+        this.baseLogName = path.basename(this.baseLogPath, this.logFileExt)
+
+        this.ensureLogDirectory()
+        this.createFileStream()
+      }
     }
   }
 
@@ -122,26 +142,26 @@ export class Logger {
     this.fileStream.write(data)
   }
 
-  info(messageOrFields: Fields | null | string, message?: string) {
-    this.doLog(message, messageOrFields, 'info')
+  info(message?: any) {
+    this._doLog(message, 'info')
   }
 
-  error(messageOrFields: Fields | null | string, message?: string) {
-    this.doLog(message, messageOrFields, 'error')
+  error(message?: any) {
+    this._doLog(message, 'error')
   }
 
-  warn(messageOrFields: Fields | null | string, message?: string): void {
-    this.doLog(message, messageOrFields, 'warn')
+  warn(message?: any): void {
+    this._doLog(message, 'warn')
   }
 
-  debug(messageOrFields: Fields | null | string, message?: string) {
+  debug(message?: any) {
     if (this.options.isDebugEnabled) {
-      this.doLog(message, messageOrFields, 'debug')
+      this._doLog(message, 'debug')
     }
   }
 
-  notice(messageOrFields: Fields | null | string, message?: string) {
-    this.doLog(message, messageOrFields, 'notice')
+  notice(message?: any) {
+    this._doLog(message, 'notice')
   }
 
   private getTimestamp(): string {
@@ -157,24 +177,22 @@ export class Logger {
       .replace(/\//g, '-')
   }
 
-  private doLog(
-    message: string | undefined | Error,
-    messageOrFields: Fields | null | string,
-    level: LogLevel
-  ) {
-    const msg = message === undefined ? (messageOrFields as string) : message
-    const fields = message === undefined ? null : (messageOrFields as Fields | null)
-    this._doLog(msg, fields, level)
-  }
-
-  private _doLog(message: string | Error, fields: Fields | null, level: LogLevel) {
-    const messageStr =
-      message instanceof Error ? message.stack || message.toString() : message.toString()
+  private _doLog(message: any, level: LogLevel) {
+    let messageStr = 'undefined'
+    if (message === null) {
+      messageStr = 'null'
+    } else if (message instanceof Error) {
+      messageStr = message.stack || message.toString()
+    } else if (typeof message === "string") {
+      messageStr = message
+    } else {
+      messageStr = JSON.stringify(message)
+    }
     const timestamp = this.getTimestamp()
     const levelLabel = LEVEL_LABELS[level]
-    const formattedMessage = `[${timestamp}] ${levelLabel} ${Logger.createMessage(
-      this.messageTransformer(messageStr, level),
-      fields
+    const formattedMessage = `[${timestamp}] ${levelLabel} ${this.messageTransformer(
+      messageStr,
+      level
     )}\n`
 
     if (this.options.consoleOutput) {
@@ -186,50 +204,10 @@ export class Logger {
     }
   }
 
-  static createMessage(message: string, fields: Fields | null): string {
-    if (!fields) {
-      return message
-    }
-
-    const fieldPadding = ' '.repeat(Math.max(2, 16 - message.length))
-    let text = message + fieldPadding
-
-    const fieldNames = Object.keys(fields)
-    for (const name of fieldNames) {
-      let value = fields[name]
-      if (value instanceof Error) {
-        value = value.stack || value.toString()
-      } else if (Array.isArray(value)) {
-        value = JSON.stringify(value)
-      }
-      text += `${name}=${value} `
-    }
-
-    return text.trim()
-  }
-
-  log(message: string): void {
-    const formattedMessage = `${message}\n`
-
-    if (printer) {
-      printer(message)
-    } else if (this.options.consoleOutput) {
-      this.stream.write(formattedMessage)
-    }
-
-    if (this.options.fileOutput) {
-      this.writeToFile(message)
-    }
-  }
-
   close(): void {
     if (this.fileStream) {
       this.fileStream.end()
       this.fileStream = null
     }
-  }
-
-  static fromConfig(options: LoggerOptions): Logger {
-    return new Logger(process.stdout, options)
   }
 }
