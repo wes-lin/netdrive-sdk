@@ -33,10 +33,10 @@ importers:
   packages/ilanzou:
     dependencies:
       '@netdrive-sdk/log':
-        specifier: ^1.0.0-alpha.1
+        specifier: ^1.0.0
         version: link:../log
       '@netdrive-sdk/utils':
-        specifier: ^1.0.0-alpha.1
+        specifier: ^1.0.0
         version: link:../utils
       form-data:
         specifier: ^4.0.2
