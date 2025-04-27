@@ -30,7 +30,7 @@ npm install @netdrive-sdk/ilanzou
 2. 初始化
 
 ```js
-const { FeiJiPanClient, FileTokenStore, LanZouYClient, logger } = require('cloud189-sdk')
+const { FeiJiPanClient, FileTokenStore, LanZouYClient, logger } = require('@netdrive-sdk/ilanzou')
 
 // 设置日志输出
 logger.configure({
