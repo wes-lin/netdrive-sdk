@@ -39,6 +39,21 @@ const QINIU_CONFIG: QiniuConfig = {
   chunkSize: 4 * 1024 * 1024
 }
 
+const getHeaders = (origin: string) => {
+  return {
+    'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36',
+    'Sec-Ch-Ua': `"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"`,
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': `"Windows"`,
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-site',
+    Origin: origin,
+    Referer: `${origin}/`
+  }
+}
+
 /**
  * 对key进行URL安全的Base64编码
  * @param key 要编码的key
@@ -54,7 +69,8 @@ function encodeKey(key: string): string {
 export async function simpleUpload(
   uptoken: string,
   filePath: string,
-  key: string
+  key: string,
+  origin: string
 ): Promise<UploadResult> {
   const url = `https://${QINIU_CONFIG.uploadDomain}`
 
@@ -68,7 +84,10 @@ export async function simpleUpload(
   return await got
     .post(url, {
       body: form,
-      headers: form.getHeaders()
+      headers: {
+        ...getHeaders(origin),
+        ...form.getHeaders()
+      }
     })
     .on('uploadProgress', (progress) => {
       logger.info(`${fileName}:⬆️  transferred ${progress.transferred}/${progress.total}`)
@@ -82,12 +101,18 @@ export async function simpleUpload(
  * @param key 文件key（可选）
  * @returns Promise<string> uploadId
  */
-async function initMultipartUpload(bucket: string, uptoken: string, key: string): Promise<string> {
+async function initMultipartUpload(
+  bucket: string,
+  uptoken: string,
+  key: string,
+  origin: string
+): Promise<string> {
   const url = `https://${QINIU_CONFIG.uploadDomain}/buckets/${bucket}/objects/${key}/uploads`
 
   const response = await got
     .post(url, {
       headers: {
+        ...getHeaders(origin),
         Authorization: `UpToken ${uptoken}`
       }
     })
@@ -106,7 +131,8 @@ async function uploadPart(
   key: string,
   partNumber: number,
   chunkData: Buffer,
-  fname: string
+  fname: string,
+  origin: string
 ): Promise<{ etag: string }> {
   const url = `https://${QINIU_CONFIG.uploadDomain}/buckets/${bucket}/objects/${key}/uploads/${uploadId}/${partNumber}`
   const etag = crypto.createHash('md5').update(chunkData).digest('hex')
@@ -114,6 +140,7 @@ async function uploadPart(
   return got
     .put(url, {
       headers: {
+        ...getHeaders(origin),
         Authorization: `UpToken ${uptoken}`,
         'Content-Type': 'application/octet-stream',
         'Content-MD5': Buffer.from(etag, 'hex').toString('base64')
@@ -143,7 +170,8 @@ async function completeMultipartUpload(
   uploadId: string,
   key: string,
   fname: string,
-  parts: UploadPart[]
+  parts: UploadPart[],
+  origin: string
 ): Promise<UploadResult> {
   const url = `https://${QINIU_CONFIG.uploadDomain}/buckets/${bucket}/objects/${key}/uploads/${uploadId}`
 
@@ -153,6 +181,7 @@ async function completeMultipartUpload(
   return await got
     .post(url, {
       headers: {
+        ...getHeaders(origin),
         Authorization: `UpToken ${uptoken}`
       },
       json: {
@@ -170,7 +199,8 @@ export async function multipartUpload(
   bucket: string,
   uptoken: string,
   filePath: string,
-  key: string
+  key: string,
+  origin: string
 ): Promise<{
   token: string
 }> {
@@ -179,7 +209,7 @@ export async function multipartUpload(
   const keyBase64 = encodeKey(key)
 
   // 1. 初始化分块上传
-  const uploadId = await initMultipartUpload(bucket, uptoken, keyBase64)
+  const uploadId = await initMultipartUpload(bucket, uptoken, keyBase64, origin)
   logger.info(`Upload ID: ${uploadId}`)
 
   // 2. 读取文件并分块上传
@@ -209,7 +239,8 @@ export async function multipartUpload(
       keyBase64,
       partNumber,
       buffer,
-      fileName
+      fileName,
+      origin
     ).then(({ etag }) => ({ etag, partNumber }))
 
     pendingTasks.push(taskWithCompletion)
@@ -239,7 +270,8 @@ export async function multipartUpload(
     uploadId,
     keyBase64,
     fileName,
-    parts
+    parts,
+    origin
   )
   logger.info(`Upload completed: ${JSON.stringify(result)}`)
 
@@ -250,13 +282,14 @@ export async function uploadToQiniu(
   bucket: string,
   uptoken: string,
   filePath: string,
-  key: string
+  key: string,
+  origin: string
 ): Promise<UploadResult> {
   const stats = await fs.promises.stat(filePath)
 
   if (stats.size <= QINIU_CONFIG.chunkSize) {
-    return simpleUpload(uptoken, filePath, key)
+    return simpleUpload(uptoken, filePath, key, origin)
   } else {
-    return multipartUpload(bucket, uptoken, filePath, key)
+    return multipartUpload(bucket, uptoken, filePath, key, origin)
   }
 }

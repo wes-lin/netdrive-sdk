@@ -35,7 +35,7 @@ abstract class ALanZouYClient {
       devVersion: '131',
       devType: '6',
       extra: '2',
-      uuid: crypto.randomUUID(),
+      uuid: '',
       ...config
     }
 
@@ -44,7 +44,13 @@ abstract class ALanZouYClient {
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.70 Safari/537.36',
-        Origin: this.config.webUrl as string,
+        'Sec-Ch-Ua': `"Not)A;Brand";v="8", "Chromium";v="138", "Google Chrome";v="138"`,
+        'Sec-Ch-Ua-Mobile': '?0',
+        'Sec-Ch-Ua-Platform': `"Windows"`,
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site',
+        Origin: this.config.webUrl,
         Referer: `${this.config.webUrl}/`
       },
       retry: 2,
@@ -54,10 +60,14 @@ abstract class ALanZouYClient {
             logger.debug(`beforeRequest url: ${options.url}`)
             const nowTs = new Date().getTime().toString()
             const tsEncode = encrypt2Hex(nowTs, this.config.secret)
+            let uuid = ''
+            if (!options.url.href.includes(`${this.config.publicURL}/getUuid`)) {
+              uuid = await this.getUUid()
+            }
             const searchParams = options.url.searchParams
-            searchParams.append('uuid', this.config.uuid as string)
+            searchParams.append('uuid', uuid)
             searchParams.append('devType', this.config.devType as string)
-            searchParams.append('devCode', this.config.uuid as string)
+            searchParams.append('devCode', uuid)
             searchParams.append('devModel', this.config.devModel as string)
             searchParams.append('devVersion', this.config.devVersion as string)
             searchParams.append('appVersion', '')
@@ -119,6 +129,17 @@ abstract class ALanZouYClient {
     const res = await this.login()
     this.tokenStore.set(res.appToken)
     return res.appToken
+  }
+
+  async getUUid() {
+    if (!this.config.uuid) {
+      const res = await this.client.get(`${this.config.publicURL}/getUuid`).json<{
+        uuid: string
+      }>()
+      logger.info(`uuid:${res.uuid}`)
+      this.config.uuid = res.uuid
+    }
+    return this.config.uuid
   }
 
   getFileList = (param?: FileListParam): Promise<FileInfo> => {
@@ -250,7 +271,13 @@ abstract class ALanZouYClient {
           const now = new Date()
           return `storage/files/${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}/${account}/${now.getTime()}.gz`
         }
-        const result = await uploadToQiniu(this.config.bucket, res.upToken, filePath, key)
+        const result = await uploadToQiniu(
+          this.config.bucket,
+          res.upToken,
+          filePath,
+          key,
+          this.config.webUrl
+        )
 
         logger.debug(`获取上传结果:${JSON.stringify(result)}`)
         const token = result.token
@@ -294,10 +321,11 @@ abstract class ALanZouYClient {
     const fidEncode = encrypt2Hex(`${fileId}|${map.userId}`, this.config.secret)
     const auth = encrypt2Hex(`${fileId}|${nowTs}`, this.config.secret)
     const token = await this.getAppToken()
+    const uuid = await this.getUUid()
     const urlObject = new URLSearchParams({
-      uuid: this.config.uuid as string,
+      uuid,
       devType: this.config.devType as string,
-      devCode: this.config.uuid as string,
+      devCode: uuid,
       devModel: this.config.devModel as string,
       devVersion: this.config.devVersion as string,
       appVersion: '',
