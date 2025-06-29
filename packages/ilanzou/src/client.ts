@@ -1,5 +1,4 @@
 import got, { Got } from 'got'
-import crypto from 'crypto'
 import { computedMD5, delay, encrypt2Hex } from '@netdrive-sdk/utils'
 import {
   LanZouYClientOptions,
@@ -25,17 +24,18 @@ abstract class ALanZouYClient {
   readonly tokenStore
   readonly config: LanZouYClientConfig
   readonly client: Got
+  uuid?: string
 
   constructor(config: LanZouYClientConfig, options: LanZouYClientOptions) {
     this.username = options.username
     this.password = options.password
     this.tokenStore = options.tokenStore || new MemoryTokenStore()
+    this.uuid = options.uuid
     this.config = {
       devModel: 'chrome',
       devVersion: '131',
       devType: '6',
       extra: '2',
-      uuid: '',
       ...config
     }
 
@@ -132,14 +132,14 @@ abstract class ALanZouYClient {
   }
 
   async getUUid() {
-    if (!this.config.uuid) {
+    if (!this.uuid) {
       const res = await this.client.get(`${this.config.publicURL}/getUuid`).json<{
         uuid: string
       }>()
       logger.info(`uuid:${res.uuid}`)
-      this.config.uuid = res.uuid
+      this.uuid = res.uuid
     }
-    return this.config.uuid
+    return this.uuid
   }
 
   getFileList = (param?: FileListParam): Promise<FileInfo> => {

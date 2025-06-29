@@ -48,6 +48,7 @@ export interface LanZouYClientOptions {
   username: string
   password: string
   tokenStore?: TokenStore
+  uuid?: string
 }
 
 export interface LanZouYClientConfig {
@@ -61,7 +62,6 @@ export interface LanZouYClientConfig {
   devVersion?: string
   devType?: string
   extra?: string
-  uuid?: string
 }
 
 export interface QiniupUpTokenRequest {
