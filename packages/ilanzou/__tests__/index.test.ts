@@ -28,7 +28,8 @@ const generateRandomFile = () => {
     password: process.env.LZ_PASSWORD as string,
     tokenStore: new FileTokenStore(
       `${tmpDir}/token/${process.env.TYPE}/${process.env.LZ_USER_NAME}.token`
-    )
+    ),
+    uuid: '0f71dd2d-867d-45ed-af7a-a1005e9b4c5b'
   }
 
   const fileName = generateRandomFile()
