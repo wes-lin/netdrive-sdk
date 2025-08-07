@@ -2,7 +2,7 @@
 
 [![NPM](https://nodei.co/npm/@netdrive-sdk/ilanzou.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/@netdrive-sdk/ilanzou/)
 
-> 基于node.js的网盘sdk,现已支持小飞机网盘/蓝奏云优享
+> 基于node.js的网盘sdk,现已支持~~小飞机网盘~~/蓝奏云优享
 
 <div align="center">
   <a href="https://www.npmjs.org/package/@netdrive-sdk/ilanzou">
