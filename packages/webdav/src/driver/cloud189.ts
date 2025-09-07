@@ -17,20 +17,21 @@ const options = {
 }
 const client = new LanZouYClient(options)
 const cacheResources = new Map<string, Resource[]>()
+const cacheResourceUrl = new Map<string, string>()
 
 function getParentPath(url: string): string {
   const dirname = path.dirname(url)
-  return dirname
+  return dirname.endsWith('/') ? dirname : `${dirname}/`
 }
 
-async function getResources(folderId?: number): Promise<Resource[] | undefined> {
+async function getResources(baseUrl: string, folderId?: number): Promise<Resource[] | undefined> {
   const res = await client.getFileList({
     folderId
   })
   return res.list?.map((file) => {
     return {
       id: String(file.fileId || file.folderId),
-      href: `/${file.fileName || file.folderName}`,
+      href: `${baseUrl}${file.fileName || file.folderName}`,
       name: encodeURIComponent(file.fileName || file.folderName),
       size: file.fileSize * 1024 || 0,
       lastModified: file.updTime,
@@ -41,23 +42,22 @@ async function getResources(folderId?: number): Promise<Resource[] | undefined> 
 }
 
 export async function readdir(url: string) {
-  console.log('url:', url)
   if (cacheResources.has(url)) {
     return cacheResources.get(url) || []
   }
   let resources: Resource[] | undefined = undefined
   if (url === '/') {
-    resources = await getResources()
+    resources = await getResources(url)
   } else {
     const parentPath = getParentPath(url)
-    const list = await readdir(parentPath.endsWith('/') ? parentPath : `${parentPath}/`)
+    const list = await readdir(parentPath)
     if (list) {
       const name = path.basename(url).toUpperCase()
       const folder = list.find(
         (res) => res.name.toUpperCase() === name && res.resourceType === 'collection'
       )
       if (folder) {
-        resources = await getResources(parseInt(folder.id))
+        resources = await getResources(url, parseInt(folder.id))
       }
     }
   }
@@ -65,4 +65,23 @@ export async function readdir(url: string) {
     cacheResources.set(url, resources)
   }
   return resources || []
+}
+
+export async function get(url: string) {
+  if (cacheResourceUrl.has(url)) {
+    return cacheResourceUrl.get(url)
+  }
+  const parentPath = getParentPath(url)
+  const list = await readdir(parentPath)
+  if (list) {
+    const name = path.basename(url).toUpperCase()
+    const file = list.find((res) => res.name.toUpperCase() === name && res.resourceType === 'file')
+    if (file) {
+      const resourceUrl = await client.downloadFile(file.id)
+      if (resourceUrl) {
+        cacheResourceUrl.set(url, resourceUrl)
+        return resourceUrl
+      }
+    }
+  }
 }
