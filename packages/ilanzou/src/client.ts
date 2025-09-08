@@ -314,7 +314,7 @@ abstract class ALanZouYClient {
     return this.client.get(`${this.config.protectURL}/user/account/map`).json()
   }
 
-  async downloadFile(fileId: string) {
+  async downloadFile(fileId: string, redirect?: boolean) {
     const { map } = await this.userInfo()
     const nowTs = new Date().getTime().toString()
     const tsEncode = encrypt2Hex(nowTs, this.config.secret)
@@ -336,10 +336,14 @@ abstract class ALanZouYClient {
       auth
     })
     const url = `${this.config.apiUrl}/${this.config.publicURL}/file/redirect?${urlObject.toString()}`
-    const downloadUrl = await got.get(url, {
-      followRedirect: false
-    })
-    return downloadUrl.headers.location
+    if (redirect) {
+      const downloadUrl = await got.get(url, {
+        followRedirect: false
+      })
+      return downloadUrl.headers.location
+    } else {
+      return url
+    }
   }
 
   async ensureFolderPath(folderPath: string, parentFolderId: number = 0): Promise<number> {

@@ -3,7 +3,7 @@ import { create } from 'xmlbuilder2'
 import mimeTypes from 'mime-types'
 import { Resource } from '../types'
 
-function buildXML(resources: Resource[]) {
+function buildPropfindXML(resources: Resource[]) {
   const root = create({ version: '1.0', encoding: 'utf-8' }).ele('d:multistatus', {
     'xmlns:d': 'DAV:'
   })
@@ -34,10 +34,34 @@ function buildXML(resources: Resource[]) {
   return root.end({ prettyPrint: true })
 }
 
+function buildNotFoundXML(href: string) {
+  const root = create({ version: '1.0', encoding: 'utf-8' }).ele('d:multistatus', {
+    'xmlns:d': 'DAV:'
+  })
+  const response = root.ele('d:response')
+  response.ele('d:href').txt(href)
+  const propstatSuccess = response.ele('d:propstat')
+  const propSuccess = propstatSuccess.ele('d:prop')
+  propSuccess.ele({})
+  propstatSuccess.ele('d:status').txt('HTTP/1.1 404 NOT FOUND')
+  return root.end({ prettyPrint: true })
+}
+
 export const propfindExtensions = (req: Request, res: Response, next: NextFunction) => {
   res.propfind = (data: Resource[]) => {
-    const xmlData = buildXML(data)
+    const xmlData = buildPropfindXML(data)
     res.status(207)
+    res.set('Content-Type', 'application/xml; charset=utf-8')
+    res.set('Content-Length', Buffer.from(xmlData, 'utf-8').byteLength.toString())
+    res.send(xmlData)
+  }
+  next()
+}
+
+export const notFoundExtensions = (req: Request, res: Response, next: NextFunction) => {
+  res.notFound = () => {
+    const xmlData = buildNotFoundXML(req.path)
+    res.status(404)
     res.set('Content-Type', 'application/xml; charset=utf-8')
     res.set('Content-Length', Buffer.from(xmlData, 'utf-8').byteLength.toString())
     res.send(xmlData)

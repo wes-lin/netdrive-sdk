@@ -1,7 +1,8 @@
 declare global {
   namespace Express {
-    export interface Response {
+    interface Response {
       propfind: (data: any[]) => void
+      notFound: (url: string) => void
     }
   }
 }

@@ -31,7 +31,7 @@ async function getResources(baseUrl: string, folderId?: number): Promise<Resourc
   return res.list?.map((file) => {
     return {
       id: String(file.fileId || file.folderId),
-      href: `${baseUrl}${file.fileName || file.folderName}`,
+      href: `${baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`}${file.fileName || file.folderName}`,
       name: encodeURIComponent(file.fileName || file.folderName),
       size: file.fileSize * 1024 || 0,
       lastModified: file.updTime,
@@ -43,7 +43,7 @@ async function getResources(baseUrl: string, folderId?: number): Promise<Resourc
 
 export async function readdir(url: string) {
   if (cacheResources.has(url)) {
-    return cacheResources.get(url) || []
+    return cacheResources.get(url)
   }
   let resources: Resource[] | undefined = undefined
   if (url === '/') {
@@ -64,7 +64,7 @@ export async function readdir(url: string) {
   if (resources !== undefined) {
     cacheResources.set(url, resources)
   }
-  return resources || []
+  return resources
 }
 
 export async function get(url: string) {

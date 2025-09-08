@@ -7,7 +7,7 @@ export default (req: Request, res: Response) => {
     if (url) {
       res.redirect(url)
     } else {
-      res.status(404)
+      res.notFound(req.path)
     }
   })
 }

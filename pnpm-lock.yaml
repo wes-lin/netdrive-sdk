@@ -52,7 +52,7 @@ importers:
   packages/webdav:
     dependencies:
       '@netdrive-sdk/ilanzou':
-        specifier: ^1.0.2
+        specifier: workspace:^
         version: link:../ilanzou
       express:
         specifier: ^4.18.2

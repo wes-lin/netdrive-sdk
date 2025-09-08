@@ -1,8 +1,8 @@
-import { Router, type Request, type Response } from 'express'
+import { Router } from 'express'
 import propfind from '../handler/propfind'
 import get from '../handler/get'
 
-const router = Router()
+const router: Router = Router()
 
 router.propfind('*', propfind)
 router.get('*', get)
