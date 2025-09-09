@@ -47,7 +47,7 @@ function buildNotFoundXML(href: string) {
   return root.end({ prettyPrint: true })
 }
 
-export const propfindExtensions = (req: Request, res: Response, next: NextFunction) => {
+export const webDaveExtensions = (req: Request, res: Response, next: NextFunction) => {
   res.propfind = (data: Resource[]) => {
     const xmlData = buildPropfindXML(data)
     res.status(207)
@@ -55,12 +55,8 @@ export const propfindExtensions = (req: Request, res: Response, next: NextFuncti
     res.set('Content-Length', Buffer.from(xmlData, 'utf-8').byteLength.toString())
     res.send(xmlData)
   }
-  next()
-}
-
-export const notFoundExtensions = (req: Request, res: Response, next: NextFunction) => {
-  res.notFound = () => {
-    const xmlData = buildNotFoundXML(req.path)
+  res.notFound = (path: string) => {
+    const xmlData = buildNotFoundXML(path)
     res.status(404)
     res.set('Content-Type', 'application/xml; charset=utf-8')
     res.set('Content-Length', Buffer.from(xmlData, 'utf-8').byteLength.toString())
