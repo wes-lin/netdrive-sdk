@@ -169,6 +169,13 @@ abstract class ALanZouYClient {
       })
       .json()
 
+  move = (fileIds: string, folderIds: string, targetId: string): Promise<ApiResponse> =>
+    this.client
+      .post(`${this.config.protectURL}/file/folder/move`, {
+        json: { fileIds, folderIds, targetId }
+      })
+      .json()
+
   deleteFile = (value: {
     folderIds?: string | number[]
     fileIds?: string | number[]
@@ -246,7 +253,7 @@ abstract class ALanZouYClient {
       })
       .json()
 
-  uploadFile = async (filePath: string, folderId = 0) => {
+  async uploadFile(filePath: string, folderId = 0) {
     const fileName = path.basename(filePath)
     const fileInfo = await computedMD5(filePath)
     const fileSize = fileInfo.size > 1024 ? fileInfo.size / 1024 : 1
@@ -309,6 +316,8 @@ abstract class ALanZouYClient {
     map: {
       userId: number
       account: string
+      usedSize: number
+      totalSize: number
     }
   }> {
     return this.client.get(`${this.config.protectURL}/user/account/map`).json()

@@ -17,6 +17,12 @@ function buildPropfindXML(resources: Resource[]) {
     propSuccess.ele('d:getcontenttype').txt(resource.resourceType)
     propSuccess.ele('d:getcreationdate').txt(resource.creationDate)
     propSuccess.ele('d:getlastmodified').txt(resource.lastModified)
+    if (resource.available) {
+      propSuccess.ele('d:quota-available-bytes').txt(resource.available + '')
+    }
+    if (resource.used) {
+      propSuccess.ele('d:quota-used-bytes').txt(resource.used + '')
+    }
     const resourcetypeElem = propSuccess.ele('d:resourcetype')
     const contentlength = propSuccess.ele('d:getcontentlength')
     const contenttype = propstatSuccess.ele('d:getcontenttype')
@@ -50,6 +56,7 @@ function buildNotFoundXML(href: string) {
 export const webDaveExtensions = (req: Request, res: Response, next: NextFunction) => {
   res.propfind = (data: Resource[]) => {
     const xmlData = buildPropfindXML(data)
+    console.log(xmlData)
     res.status(207)
     res.set('Content-Type', 'application/xml; charset=utf-8')
     res.set('Content-Length', Buffer.from(xmlData, 'utf-8').byteLength.toString())

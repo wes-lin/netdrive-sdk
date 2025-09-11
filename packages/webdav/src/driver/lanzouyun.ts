@@ -46,7 +46,7 @@ class LanZouYDriver {
     })
   }
 
-  async getResource(
+  async urlToResource(
     baseUrl: string,
     resourceType?: 'collection' | 'file'
   ): Promise<Resource | undefined> {
@@ -67,9 +67,22 @@ class LanZouYDriver {
   async readdir(url: string) {
     let resources: Resource[] | undefined = undefined
     if (url === '/') {
+      const quota = await this.diskinfo()
+      const root: Resource = {
+        id: '0',
+        href: '/',
+        name: '/',
+        size: 0,
+        lastModified: '',
+        creationDate: '',
+        resourceType: 'collection',
+        used: quota?.used,
+        available: quota?.available
+      }
       resources = await this.getResources(url)
+      resources?.unshift(root)
     } else {
-      const folder = await this.getResource(url, 'collection')
+      const folder = await this.urlToResource(url, 'collection')
       if (folder) {
         resources = await this.getResources(url, parseInt(folder.id))
       }
@@ -79,7 +92,7 @@ class LanZouYDriver {
 
   @Cache({ ttl: 60 * 1000 })
   async get(url: string) {
-    const file = await this.getResource(url, 'file')
+    const file = await this.urlToResource(url, 'file')
     if (file) {
       const resourceUrl = await this.client.downloadFile(file.id)
       if (resourceUrl) {
@@ -89,7 +102,7 @@ class LanZouYDriver {
   }
 
   async unlink(url: string) {
-    const resource = await this.getResource(url)
+    const resource = await this.urlToResource(url)
     if (resource) {
       if (resource.resourceType === 'file') {
         await this.client.deleteFile({
@@ -103,6 +116,17 @@ class LanZouYDriver {
       return resource.id
     }
   }
+
+  async mkdir(url: string) {
+    return await this.client.ensureFolderPath(decodeURIComponent(url))
+  }
+
+  @Cache({ ttl: 10 * 60 * 1000 })
+  async diskinfo() {
+    const res = await this.client.userInfo()
+    const { usedSize, totalSize } = res.map
+    return { used: usedSize * 1024, available: (totalSize - usedSize) * 1024 }
+  }
 }
 
 const driver = new LanZouYDriver(new LanZouYClient(options))
@@ -110,3 +134,4 @@ const driver = new LanZouYDriver(new LanZouYClient(options))
 export const readdir = (url: string) => driver.readdir(url)
 export const get = (url: string) => driver.get(url)
 export const unlink = (url: string) => driver.unlink(url)
+export const mkdir = (url: string) => driver.mkdir(url)

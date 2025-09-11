@@ -12,7 +12,7 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Express Server')
 })
 
-app.use('/webdav', webdav)
+app.use('/dav', webdav)
 
 app.listen(port, () => {
   console.log(`⚡️[server]: Server is running at http://localhost:${port}`)

@@ -8,4 +8,6 @@ export type Resource = {
   lastModified: string
   creationDate: string
   resourceType: ResourceType
+  available?: number
+  used?: number
 }
