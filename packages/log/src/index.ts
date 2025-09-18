@@ -17,13 +17,21 @@ const LEVEL_LABELS: Record<LogLevel, string> = {
   notice: '[NOTICE]'
 }
 
+const LEVEL_PRIORITY: Record<LogLevel, number> = {
+  error: 0,
+  warn: 1,
+  notice: 2,
+  info: 3,
+  debug: 4
+}
+
 export interface LoggerOptions {
   consoleOutput?: boolean
   fileOutput?: boolean
   filePath?: string
   maxFileSize?: number
   maxFiles?: number
-  isDebugEnabled?: boolean
+  logLevel?: LogLevel
 }
 
 export class Logger {
@@ -43,7 +51,7 @@ export class Logger {
       filePath: path.join(process.cwd(), 'logs', 'app.log'),
       maxFileSize: 1024 * 1024 * 10, // 10MB
       maxFiles: 5,
-      isDebugEnabled: false,
+      logLevel: 'info',
       ...options
     }
 
@@ -142,6 +150,12 @@ export class Logger {
     this.fileStream.write(data)
   }
 
+  private shouldLog(level: LogLevel): boolean {
+    const currentLevelPriority = LEVEL_PRIORITY[this.options.logLevel]
+    const messageLevelPriority = LEVEL_PRIORITY[level]
+    return messageLevelPriority <= currentLevelPriority
+  }
+
   info(message?: any) {
     this._doLog(message, 'info')
   }
@@ -155,13 +169,19 @@ export class Logger {
   }
 
   debug(message?: any) {
-    if (this.options.isDebugEnabled) {
-      this._doLog(message, 'debug')
-    }
+    this._doLog(message, 'debug')
   }
 
   notice(message?: any) {
     this._doLog(message, 'notice')
+  }
+
+  setLogLevel(level: LogLevel): void {
+    this.options.logLevel = level
+  }
+
+  getLogLevel(): LogLevel {
+    return this.options.logLevel
   }
 
   private getTimestamp(): string {
@@ -178,12 +198,15 @@ export class Logger {
   }
 
   private _doLog(message: any, level: LogLevel) {
+    if (!this.shouldLog(level)) {
+      return
+    }
     let messageStr = 'undefined'
     if (message === null) {
       messageStr = 'null'
     } else if (message instanceof Error) {
       messageStr = message.stack || message.toString()
-    } else if (typeof message === "string") {
+    } else if (typeof message === 'string') {
       messageStr = message
     } else {
       messageStr = JSON.stringify(message)

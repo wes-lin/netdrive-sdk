@@ -21,7 +21,7 @@ const generateRandomFile = () => {
 ;(async () => {
   logger.configure({
     fileOutput: true,
-    isDebugEnabled: true
+    logLevel: 'info'
   })
   const options = {
     username: process.env.LZ_USER_NAME as string,
