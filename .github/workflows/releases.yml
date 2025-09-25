@@ -10,9 +10,10 @@ on:
         required: true
         description: 'Which package to release'
         options:
-          - ilanzou
+          - core
           - log
-          - utils
+          - ilanzou
+          - lanzou
 
 jobs:
   build:
