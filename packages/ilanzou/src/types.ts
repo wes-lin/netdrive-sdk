@@ -1,3 +1,4 @@
+import { Store } from '@netdrive-sdk/core'
 interface Response {
   code: number
   msg: string
@@ -47,7 +48,7 @@ export interface PathResponse
 export interface LanZouYClientOptions {
   username: string
   password: string
-  tokenStore?: TokenStore
+  tokenStore?: Store<string>
   uuid?: string
 }
 
@@ -70,10 +71,4 @@ export interface QiniupUpTokenRequest {
   fileSize: number
   folderId?: number
   md5: string
-}
-
-export abstract class TokenStore {
-  abstract set(token: string): Promise<void> | void
-
-  abstract get(): Promise<string> | string
 }

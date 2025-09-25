@@ -1,0 +1,26 @@
+{
+  "name": "@netdrive-sdk/core",
+  "version": "1.0.0",
+  "description": "",
+  "source": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "!__tests__"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "wes lin",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wes-lin/netdrive-sdk.git",
+    "directory": "packages/core"
+  },
+  "license": "AGPL-3.0",
+  "dependencies": {},
+  "devDependencies": {}
+}

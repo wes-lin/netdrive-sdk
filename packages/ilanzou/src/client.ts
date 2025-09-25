@@ -1,5 +1,5 @@
 import got, { Got } from 'got'
-import { computedMD5, delay, encrypt2Hex } from '@netdrive-sdk/utils'
+import { computedMD5, delay, encrypt2Hex } from '@netdrive-sdk/core'
 import {
   LanZouYClientOptions,
   FileInfo,
@@ -11,10 +11,10 @@ import {
   LanZouYClientConfig,
   FileListParam
 } from './types'
-import { MemoryTokenStore } from './store'
 import path from 'path'
 import { logger } from './log'
 import { uploadToQiniu } from './qiniuUploader'
+import { MemoryTokenStore } from './store'
 
 process.env.TZ = 'Asia/Hong_Kong'
 
