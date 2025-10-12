@@ -36,7 +36,8 @@ const generateRandomFile = () => {
 
   const client =
     process.env.TYPE === 'feijipan' ? new FeiJiPanClient(options) : new LanZouYClient(options)
-
+  const list = await client.getFileList()
+  console.log(list)
   const res = await client.uploadFile(fileName, 0)
   console.log(res)
 })()

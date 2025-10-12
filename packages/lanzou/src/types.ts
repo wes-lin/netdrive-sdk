@@ -1,4 +1,8 @@
-import { Store } from '@netdrive-sdk/core'
+import { Store, MemoryStore, FileStore } from '@netdrive-sdk/core'
+
+export class MemoryCookieStore extends MemoryStore<string> {}
+
+export class FileCookieStore extends FileStore<string> {}
 
 interface Response {
   zt: number

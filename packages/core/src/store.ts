@@ -49,9 +49,6 @@ export class FileStore<T> extends MemoryStore<T> {
   }
 
   set(_value: T) {
-    if (!_value) {
-      return
-    }
     super.set(_value)
     this.#saveToFile(this.filePath, _value)
   }
@@ -67,7 +64,7 @@ export class FileStore<T> extends MemoryStore<T> {
   }
 
   #saveToFile(filePath: string, data: T) {
-    return promisesFs.writeFile(filePath, JSON.stringify(data), {
+    return promisesFs.writeFile(filePath, JSON.stringify(data || ''), {
       encoding: 'utf-8'
     })
   }

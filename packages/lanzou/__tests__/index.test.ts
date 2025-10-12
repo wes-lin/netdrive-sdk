@@ -15,4 +15,6 @@ const tmpDir = '.temp'
   const client = new LanZouClient(options)
   const res = await client.getFileList(-1)
   console.log(res)
+
+  await client.createFolder(0, '测试文件夹', '文件夹描述')
 })()

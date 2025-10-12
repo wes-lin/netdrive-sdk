@@ -1,4 +1,8 @@
-import { Store } from '@netdrive-sdk/core'
+import { Store, MemoryStore, FileStore } from '@netdrive-sdk/core'
+
+export class MemoryTokenStore extends MemoryStore<string> {}
+
+export class FileTokenStore extends FileStore<string> {}
 interface Response {
   code: number
   msg: string

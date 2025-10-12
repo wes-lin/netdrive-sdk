@@ -9,12 +9,12 @@ import {
   ShareUrlResponse,
   QiniupUpTokenRequest,
   LanZouYClientConfig,
-  FileListParam
+  FileListParam,
+  MemoryTokenStore
 } from './types'
 import path from 'path'
 import { logger } from './log'
 import { uploadToQiniu } from './qiniuUploader'
-import { MemoryTokenStore } from './store'
 
 process.env.TZ = 'Asia/Hong_Kong'
 

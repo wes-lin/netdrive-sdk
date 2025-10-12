@@ -1,6 +1,5 @@
 import got, { Got } from 'got'
-import { LanZouClientOptions } from './types'
-import { MemoryCookieStore } from './store'
+import { LanZouClientOptions, MemoryCookieStore } from './types'
 import { logger } from './log'
 
 export class LanZouClient {
@@ -88,6 +87,19 @@ export class LanZouClient {
         form: {
           task: 47,
           folder_id: folderId
+        }
+      })
+      .json()
+  }
+
+  createFolder(parentId: number, folderName: string, folderDescription?: string) {
+    return this.client
+      .post('doupload.php', {
+        form: {
+          task: 2,
+          parent_id: parentId,
+          folder_name: folderName,
+          folder_description: folderDescription
         }
       })
       .json()
