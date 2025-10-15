@@ -58,13 +58,13 @@ export class FileStore<T> extends MemoryStore<T> {
     if (fs.existsSync(filePath)) {
       data = fs.readFileSync(filePath, {
         encoding: 'utf-8'
-      }) as T
+      }) as string
     }
-    return data
+    return data ? JSON.parse(data) : null
   }
 
   #saveToFile(filePath: string, data: T) {
-    return promisesFs.writeFile(filePath, JSON.stringify(data || ''), {
+    return promisesFs.writeFile(filePath, data ? JSON.stringify(data) : '', {
       encoding: 'utf-8'
     })
   }
