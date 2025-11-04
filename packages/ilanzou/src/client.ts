@@ -65,17 +65,17 @@ abstract class ALanZouYClient {
               uuid = await this.getUUid()
             }
             const searchParams = options.url.searchParams
-            searchParams.append('uuid', uuid)
-            searchParams.append('devType', this.config.devType as string)
-            searchParams.append('devCode', uuid)
-            searchParams.append('devModel', this.config.devModel as string)
-            searchParams.append('devVersion', this.config.devVersion as string)
-            searchParams.append('appVersion', '')
-            searchParams.append('timestamp', tsEncode)
-            searchParams.append('extra', this.config.extra as string)
+            searchParams.set('uuid', uuid)
+            searchParams.set('devType', this.config.devType as string)
+            searchParams.set('devCode', uuid)
+            searchParams.set('devModel', this.config.devModel as string)
+            searchParams.set('devVersion', this.config.devVersion as string)
+            searchParams.set('appVersion', '')
+            searchParams.set('timestamp', tsEncode)
+            searchParams.set('extra', this.config.extra as string)
             if (options.url.pathname.startsWith(`/${this.config.protectURL}`)) {
               const token = await this.getAppToken()
-              searchParams.append('appToken', token)
+              searchParams.set('appToken', token)
             }
           }
         ],

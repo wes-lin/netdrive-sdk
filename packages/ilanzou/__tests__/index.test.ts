@@ -32,12 +32,10 @@ const generateRandomFile = () => {
     uuid: '0f71dd2d-867d-45ed-af7a-a1005e9b4c5b'
   }
 
-  const fileName = generateRandomFile()
+  // const fileName = generateRandomFile()
 
   const client =
     process.env.TYPE === 'feijipan' ? new FeiJiPanClient(options) : new LanZouYClient(options)
-  const list = await client.getFileList()
-  console.log(list)
-  const res = await client.uploadFile(fileName, 0)
+  const res = await Promise.all([client.userInfo(), client.getFileList()])
   console.log(res)
 })()
