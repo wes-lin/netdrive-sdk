@@ -10,7 +10,8 @@ import {
   QiniupUpTokenRequest,
   LanZouYClientConfig,
   FileListParam,
-  MemoryTokenStore
+  MemoryTokenStore,
+  AppToken
 } from './types'
 import path from 'path'
 import { logger } from './log'
@@ -24,6 +25,7 @@ abstract class ALanZouYClient {
   readonly tokenStore
   readonly config: LanZouYClientConfig
   readonly client: Got
+  private appTokenPromise!: Promise<AppToken> | null
   uuid?: string
 
   constructor(config: LanZouYClientConfig, options: LanZouYClientOptions) {
@@ -109,9 +111,7 @@ abstract class ALanZouYClient {
     })
   }
 
-  login = (): Promise<{
-    appToken: string
-  }> =>
+  login = (): Promise<AppToken> =>
     this.client
       .post(`${this.config.publicURL}/login`, {
         json: {
@@ -126,8 +126,17 @@ abstract class ALanZouYClient {
     if (token) {
       return token
     }
-    const res = await this.login()
-    this.tokenStore.set(res.appToken)
+    if (!this.appTokenPromise) {
+      this.appTokenPromise = this.login()
+        .then((res) => {
+          this.tokenStore.set(res.appToken)
+          return res
+        })
+        .finally(() => {
+          this.appTokenPromise = null
+        })
+    }
+    const res = await this.appTokenPromise
     return res.appToken
   }
 

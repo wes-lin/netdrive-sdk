@@ -12,6 +12,10 @@ export interface ApiResponse<T = any> extends Response {
   list?: T[]
 }
 
+export interface AppToken {
+  appToken: string
+}
+
 export interface FileListParam {
   folderId?: number
   offset?: number
